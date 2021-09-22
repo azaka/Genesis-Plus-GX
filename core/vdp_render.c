@@ -57,6 +57,10 @@ extern int8 reset_do_not_clear_buffers;
 extern md_ntsc_t *md_ntsc;
 extern sms_ntsc_t *sms_ntsc;
 
+#undef MAX
+#undef MIN
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 /* Output pixels type*/
 #if defined(USE_8BPP_RENDERING)
@@ -1515,6 +1519,17 @@ void render_bg_m5(int line)
 
   /* Common data */
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = *(uint32 *)&vsram[0];
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -1647,11 +1662,18 @@ void render_bg_m5(int line)
 
     /* Plane A line buffer */
     dst = (uint32 *)&linebuf[1][0x20 + (start << 4)];
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -1667,6 +1689,17 @@ void render_bg_m5_vs(int line)
 
   /* Common data */
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = 0;
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -1724,11 +1757,13 @@ void render_bg_m5_vs(int line)
 
   for(column = 0; column < end; column++, index++)
   {
+	  int column_capped = column - (config.h40_extra_columns / 4);
+    column_capped = MAX(0, MIN(column_capped, 19));
     /* Plane B vertical scroll */
 #ifdef LSB_FIRST
-    v_line = (line + (vs[column] >> 16)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 16)) & pf_row_mask;
 #else
-    v_line = (line + vs[column]) & pf_row_mask;
+    v_line = (line + vs[column_capped]) & pf_row_mask;
 #endif
 
     /* Plane B name table */
@@ -1804,11 +1839,14 @@ void render_bg_m5_vs(int line)
 
     for(column = start; column < end; column++, index++)
     {
+      int column_capped = column - (config.h40_extra_columns / 4);
+      column_capped = MAX(0, MIN(column_capped, 19));
+
       /* Plane A vertical scroll */
 #ifdef LSB_FIRST
-      v_line = (line + vs[column]) & pf_row_mask;
+      v_line = (line + vs[column_capped]) & pf_row_mask & pf_row_mask;
 #else
-      v_line = (line + (vs[column] >> 16)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 16)) & pf_row_mask & pf_row_mask;
 #endif
 
       /* Plane A name table */
@@ -1837,11 +1875,18 @@ void render_bg_m5_vs(int line)
 
     /* Plane A line buffer */
     dst = (uint32 *)&linebuf[1][0x20 + (start << 4)];
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -1857,6 +1902,17 @@ void render_bg_m5_im2(int line)
   /* Common data */
   int odd = odd_frame;
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = *(uint32 *)&vsram[0];
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -1989,11 +2045,18 @@ void render_bg_m5_im2(int line)
 
     /* Plane A line buffer */
     dst = (uint32 *)&linebuf[1][0x20 + (start << 4)];
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN_IM2(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN_IM2(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2010,6 +2073,17 @@ void render_bg_m5_im2_vs(int line)
   /* Common data */
   int odd = odd_frame;
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = 0;
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -2067,11 +2141,13 @@ void render_bg_m5_im2_vs(int line)
 
   for(column = 0; column < end; column++, index++)
   {
+    int column_capped = column - (config.h40_extra_columns / 4);
+    column_capped = MAX(0, MIN(column_capped, 19));
     /* Plane B vertical scroll */
 #ifdef LSB_FIRST
-    v_line = (line + (vs[column] >> 17)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 17)) & pf_row_mask;
 #else
-    v_line = (line + (vs[column] >> 1)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 1)) & pf_row_mask;
 #endif
 
     /* Plane B name table */
@@ -2147,11 +2223,13 @@ void render_bg_m5_im2_vs(int line)
 
     for(column = start; column < end; column++, index++)
     {
+	    int column_capped = column - (config.h40_extra_columns / 4);
+      column_capped = MAX(0, MIN(column_capped, 19));
       /* Plane A vertical scroll */
 #ifdef LSB_FIRST
-      v_line = (line + (vs[column] >> 1)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 1)) & pf_row_mask;
 #else
-      v_line = (line + (vs[column] >> 17)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 17)) & pf_row_mask;
 #endif
 
       /* Plane A name table */
@@ -2180,11 +2258,18 @@ void render_bg_m5_im2_vs(int line)
 
     /* Plane A line buffer */
     dst = (uint32 *)&linebuf[1][0x20 + (start << 4)];
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN_IM2(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN_IM2(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2203,6 +2288,17 @@ void render_bg_m5(int line)
 
   /* Scroll Planes common data */
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = *(uint32 *)&vsram[0];
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -2307,11 +2403,18 @@ void render_bg_m5(int line)
 
     /* Pattern row index */
     v_line = (line & 7) << 3;
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2360,6 +2463,17 @@ void render_bg_m5_vs(int line)
 
   /* Scroll Planes common data */
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = 0;
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -2448,11 +2562,13 @@ void render_bg_m5_vs(int line)
 
     for(column = start; column < end; column++, index++)
     {
+      int column_capped = column - (config.h40_extra_columns / 4);
+      column_capped = MAX(0, MIN(column_capped, 19));
       /* Plane A vertical scroll */
 #ifdef LSB_FIRST
-      v_line = (line + vs[column]) & pf_row_mask;
+      v_line = (line + vs[column_capped]) & pf_row_mask;
 #else
-      v_line = (line + (vs[column] >> 16)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 16)) & pf_row_mask;
 #endif
 
       /* Plane A name table */
@@ -2487,11 +2603,18 @@ void render_bg_m5_vs(int line)
 
     /* Pattern row index */
     v_line = (line & 7) << 3;
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2527,11 +2650,13 @@ void render_bg_m5_vs(int line)
 
   for(column = 0; column < width; column++, index++)
   {
+	  int column_capped = column - (config.h40_extra_columns / 4);
+    column_capped = MAX(0, MIN(column_capped, 19));
     /* Plane B vertical scroll */
 #ifdef LSB_FIRST
-    v_line = (line + (vs[column] >> 16)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 16)) & pf_row_mask;
 #else
-    v_line = (line + vs[column]) & pf_row_mask;
+    v_line = (line + vs[column_capped]) & pf_row_mask;
 #endif
 
     /* Plane B name table */
@@ -2555,6 +2680,17 @@ void render_bg_m5_im2(int line)
   /* Scroll Planes common data */
   int odd = odd_frame;
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = *(uint32 *)&vsram[0];
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -2659,11 +2795,18 @@ void render_bg_m5_im2(int line)
 
     /* Pattern row index */
     v_line = ((line & 7) << 1 | odd) << 3;
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN_IM2(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2713,6 +2856,17 @@ void render_bg_m5_im2_vs(int line)
   /* common data */
   int odd = odd_frame;
   uint32 xscroll      = *(uint32 *)&vram[hscb + ((line & hscroll_mask) << 2)];
+  if (
+    (render_obj == render_obj_m5) ||
+    (render_obj == render_obj_m5_im2) ||
+    (render_obj == render_obj_m5_im2_ste) ||
+    (render_obj == render_obj_m5_ste)
+  ) {
+    xscroll += (
+      (config.h40_extra_columns * 4) +
+      ((config.h40_extra_columns * 4) << 16)
+    );
+  }
   uint32 yscroll      = 0;
   uint32 pf_col_mask  = playfield_col_mask;
   uint32 pf_row_mask  = playfield_row_mask;
@@ -2802,11 +2956,13 @@ void render_bg_m5_im2_vs(int line)
 
     for(column = start; column < end; column++, index++)
     {
+      int column_capped = column - (config.h40_extra_columns / 4);
+      column_capped = MAX(0, MIN(column_capped, 19));
       /* Plane A vertical scroll */
 #ifdef LSB_FIRST
-      v_line = (line + (vs[column] >> 1)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 1)) & pf_row_mask;
 #else
-      v_line = (line + (vs[column] >> 17)) & pf_row_mask;
+      v_line = (line + (vs[column_capped] >> 17)) & pf_row_mask;
 #endif
 
       /* Plane A name table */
@@ -2841,11 +2997,18 @@ void render_bg_m5_im2_vs(int line)
 
     /* Pattern row index */
     v_line = ((line & 7) << 1 | odd) << 3;
+	
+	int start_real = start + (config.h40_extra_columns / 4);
+    int end_real = end - (config.h40_extra_columns / 4);
 
     for(column = start; column < end; column++)
     {
-      atbuf = nt[column];
-      DRAW_COLUMN_IM2(atbuf, v_line)
+      atbuf = nt[column - (config.h40_extra_columns / 4)];
+      if ((column >= start_real) && (column < end_real)) {
+        DRAW_COLUMN_IM2(atbuf, v_line)
+      } else {
+        *dst++ = 0; *dst++ = 0; *dst++ = 0; *dst++ = 0;
+      }
     }
   }
 
@@ -2881,11 +3044,13 @@ void render_bg_m5_im2_vs(int line)
 
   for(column = 0; column < width; column++, index++)
   {
+    int column_capped = column - (config.h40_extra_columns / 4);
+    column_capped = MAX(0, MIN(column_capped, 19));
     /* Plane B vertical scroll */
 #ifdef LSB_FIRST
-    v_line = (line + (vs[column] >> 17)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 17)) & pf_row_mask;
 #else
-    v_line = (line + (vs[column] >> 1)) & pf_row_mask;
+    v_line = (line + (vs[column_capped] >> 1)) & pf_row_mask;
 #endif
 
     /* Plane B name table */
@@ -3189,6 +3354,7 @@ void render_obj_m5(int line)
 
     /* Display area offset */
     xpos = xpos - 0x80;
+    xpos += config.h40_extra_columns * 4;
 
     /* Sprite size */
     temp = object_info->size;
@@ -3302,6 +3468,7 @@ void render_obj_m5_ste(int line)
 
     /* Display area offset */
     xpos = xpos - 0x80;
+    xpos += config.h40_extra_columns * 4;
 
     /* Sprite size */
     temp = object_info->size;
@@ -3418,6 +3585,7 @@ void render_obj_m5_im2(int line)
 
     /* Display area offset */
     xpos = xpos - 0x80;
+    xpos += config.h40_extra_columns * 4;
 
     /* Sprite size */
     temp = object_info->size;
@@ -3531,6 +3699,7 @@ void render_obj_m5_im2_ste(int line)
 
     /* Display area offset */
     xpos = xpos - 0x80;
+    xpos += config.h40_extra_columns * 4;
 
     /* Sprite size */
     temp = object_info->size;
@@ -3856,7 +4025,11 @@ void parse_satb_m5(int line)
 
         /* Update sprite list (only name, attribute & xpos are parsed from VRAM) */
         object_info->attr  = p[link + 2];
-        object_info->xpos  = p[link + 3] & 0x1ff;
+        
+        if (config.h40_extra_columns > 0)
+          object_info->xpos  = p[link + 3];
+        else
+          object_info->xpos  = p[link + 3] & 0x1ff;
         object_info->ypos  = ypos;
         object_info->size  = size & 0x0f;
 
@@ -4039,9 +4212,18 @@ void window_clip(unsigned int data, unsigned int sw)
   }
   else
   {
+    // Problem: window_clip is called as a function from the vdp so we can't
+    // really just re-call it if the number of columns gets changed
+    //
+    // Partial solution: If the number of user-selected columns is greater
+    // than 18 the added window clipping columns gets bumped up to 24.
+    // That way non-android users still get to play around with crazy wide
+    // resolutions but android users dont get screwed
+    int added_columns = config.h40_extra_columns > 18 ? 24 : 18;
+
     /* Plane A takes up entire line */
     clip[a].left = 0;
-    clip[a].right = sw;
+    clip[a].right = sw + (added_columns / 2);
     clip[a].enable = 1;
     clip[w].enable = 0;
   }
