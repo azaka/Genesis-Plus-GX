@@ -159,6 +159,7 @@ extern void osd_input_update(void);
 extern int load_archive(char *filename, unsigned char *buffer, int maxsize, char *extension);
 extern void ROMCheatUpdate(void);
 
+#ifndef __GCCE__
 #ifndef cdStream
 #define cdStream            RFILE
 #define cdStreamOpen(fname) rfopen(fname, "rb")
@@ -167,6 +168,7 @@ extern void ROMCheatUpdate(void);
 #define cdStreamSeek        rfseek
 #define cdStreamTell        rftell
 #define cdStreamGets        rfgets
+#endif
 #endif
 
 #endif /* _OSD_H */

@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <streams/file_stream.h>
 
+#ifndef __GCCE__
 RETRO_BEGIN_DECLS
 
 #define FILE RFILE
@@ -85,5 +86,6 @@ int rferror(RFILE* stream);
 int rfeof(RFILE* stream);
 
 RETRO_END_DECLS
+#endif // __GCCE__
 
 #endif

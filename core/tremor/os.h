@@ -50,6 +50,9 @@
 #ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
 #endif
+#ifdef __GCCE__
+#define alloca __builtin_alloca
+#endif
 
 #ifdef USE_MEMORY_H
 #  include <memory.h>
