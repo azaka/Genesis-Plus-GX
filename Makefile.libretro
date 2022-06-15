@@ -314,6 +314,7 @@ else ifeq ($(platform), gcce)
         CC_AS = arm-none-symbianelf-gcc$(EXE_EXT)
         AR = arm-none-symbianelf-ar$(EXE_EXT)
         #     PLATFORM_DEFINES +=
+	ENDIANNESS_DEFINES :=-DLSB_FIRST -DALIGN_LONG -DBYTE_ORDER=LITTLE_ENDIAN -DUSE_DYNAMIC_ALLOC
         STATIC_LINKING = 1
 	HAVE_CHD = 0
 
